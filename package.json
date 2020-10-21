@@ -1,0 +1,20 @@
+{
+  "name": "calendarapi",
+  "version": "1.0.0",
+  "description": "Google Calendar API Node.js quickstart project, delegated access using oauth2.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Google",
+    "Calendar",
+    "Calendar"
+  ],
+  "author": "Rupjyoti",
+  "license": "MIT",
+  "dependencies": {
+    "googleapis": "^61.0.0",
+    "node-notifier": "^8.0.0"
+  }
+}
