@@ -1,5 +1,7 @@
 const { google } = require("googleapis");
 const notifier=require('node-notifier');
+const fs=require('fs');
+const { compileFunction } = require("vm");
 
 /**
  * List the labels in the user's account
@@ -87,8 +89,150 @@ async function listMessages(auth) {
     }
 }
 
+async function listHistory(auth, nextPageToken=null){
+    console.log(nextPageToken)
+    let historyId=null;
+    try{
+        const data=fs.readFileSync('./sync.json');
+        const syncInfo=JSON.parse(data);
+        if(syncInfo.mostRecentHistoryId)
+            historyId=syncInfo.mostRecentHistoryId;
+        else{
+            throw new Error('startHistoryId not available')
+        }
+    }
+    catch(err){
+        throw err;
+    }
+    const gmail=google.gmail({version:'v1',auth});
+    try{
+        const res=await gmail.users.history.list({
+            userId:'me',
+            maxResults:50,
+            startHistoryId:historyId,
+            labelId:'INBOX',
+            pageToken:nextPageToken?nextPageToken:null
+        });
+        // console.log(res);
+        console.log('**History Array**')
+        console.log(res.data.history);
+        res.data.history.forEach(history=>{
+            console.log(history.id);
+            console.log(history.messages)
+        })
+        console.log(res.data.historyId)
+        console.log(res.data.nextPageToken)
+        if(res.data.nextPageToken){
+            try{
+                await listHistory(auth, res.data.nextPageToken);
+            }
+            catch(err){
+                throw err;
+            }
+        }
+    }
+    catch(err){
+        console.log('WARNING Error while executing Gmail API');
+        throw err;
+    }
+}
+
+
+/**
+ * Syncs with Gmail to get the latest historyId and messageId
+ * @param {google.auth.OAuth2} auth An authorized OAuth2 client
+ */
+async function syncClient(auth){
+    console.log("Syncing with Gmail")
+    const gmail=google.gmail({version:'v1',auth});
+    try{
+        const res=await gmail.users.messages.list({
+            includeSpamTrash:false,
+            labelIds:['INBOX'],
+            maxResults:1,
+            q:'category:primary',
+            userId:'me'
+        });
+        const mostRecentMessageId=res.data.messages[0].id;
+        const mostRecentMesage= await gmail.users.messages.get({
+            userId:'me',
+            id:mostRecentMessageId
+        });
+        const mostRecentHistoryId=mostRecentMesage.data.historyId;
+
+        // For Debugging
+        console.log('mostRecentMessageId:',mostRecentMessageId);
+        console.log('mostRecentHistoryId:',mostRecentHistoryId);
+        console.log('Message Snippet:')
+        console.log(mostRecentMesage.data.snippet);
+
+        let content=null;
+        try{
+            content=fs.readFileSync('./sync.json');
+        }
+        catch(err){
+            console.log("WARNING: Error in raeding sync.json file, will create new file");
+            // throw err; Don't throw , will create new file
+        }        
+        const syncInfo={
+            mostRecentMessageId,
+            mostRecentHistoryId
+        }
+        // content not present means, the sync.json is not read properly
+        if(!content){
+            updateSyncFile(syncInfo,syncInfo);
+        }
+        else{
+            // Verify that content is an Object containing mostRecentMessageId and mostRecentHistoryId
+            // The sync.json file may be corrupted or doesn't contain the desired key-value pairs
+            let oldSyncInfo=null;
+            try{
+                oldSyncInfo=JSON.parse(content);
+            }
+            catch(err){
+                // Error in parsing
+                console.log("WARNING: sync.json file corrupted, JSON.parse failed");
+            }
+
+            if(oldSyncInfo){
+                // This function throws error in case of error, it will be caught in below catch block.
+                updateSyncFile(syncInfo,oldSyncInfo);
+            }
+            else{
+                // The content in sync.json file is corrupted, hence the sync-backup file should also contain 
+                // the updated syncInfo
+                updateSyncFile(syncInfo,syncInfo);
+            }
+        }
+
+    }
+    catch(err){
+        console.log("Error while syncing Gmail "+err.message);
+        throw err;
+    }
+}
+
+
+/**
+ * Updates the sync.json file and sync-backup.json file, used as part of the synchronization process
+ * @param {Object} newSyncInfo Object containing the latest historyId and messageId to save
+ * @param {Object} oldSyncInfo Object containing the previous historyId and messageId to save
+ */
+function updateSyncFile(newSyncInfo, oldSyncInfo){
+    try{
+        fs.writeFileSync('./sync.json',JSON.stringify(newSyncInfo));
+        // Create a backup of previous histotyId and messageId (oldSyncInfo)
+        fs.writeFileSync('./sync-backup.json',JSON.stringify(oldSyncInfo));
+    }catch(err){
+        console.log("Error while updating sync files"+err);
+        throw err;
+    }
+}
+
 module.exports={
     listLabels,
-    listMessages
+    listMessages,
+    listHistory,
+    syncClient
 }
 

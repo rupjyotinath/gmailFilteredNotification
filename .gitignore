@@ -2,3 +2,6 @@ node_modules
 credentials.json
 token.js
 outputGmail.txt
+sync.json
+sync-backup.json
+outputHistoryList.txt

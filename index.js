@@ -2,7 +2,7 @@ const fs=require('fs');
 const readline=require('readline');
 const {google} = require('googleapis');
 
-const {listLabels,listMessages}=require('./gmailAPI');
+const {listLabels,listMessages, syncClient, listHistory}=require('./gmailAPI');
 
 // If modifying these scopes, delete token.json
 // const SCOPES=['https://www.googleapis.com/auth/calendar.readonly'];
@@ -81,6 +81,24 @@ function list(auth) {
     // listLabels(auth);
 
     // Get Messages
-    listMessages(auth);
+    // listMessages(auth);
+
+    //Sync with Gmail 
+        // syncClient(auth)
+        // .then(()=>{
+        //     console.log("syncClient complete successfully")
+        // })
+        // .catch((err)=>{
+        //     console.log("Error with syncClient "+err);
+        // })
+
+    // List History
+    listHistory(auth)
+    .then(()=>{
+        console.log("listHistory Ran Successfully.");
+    })
+    .catch(err=>{
+        console.log("Error with listHistory "+err);
+    })
     
 }
