@@ -111,6 +111,7 @@ async function listHistory(auth, nextPageToken=null){
             maxResults:50,
             startHistoryId:historyId,
             labelId:'INBOX',
+            historyTypes:['MESSAGE_ADDED'],
             pageToken:nextPageToken?nextPageToken:null
         });
         // console.log(res);
