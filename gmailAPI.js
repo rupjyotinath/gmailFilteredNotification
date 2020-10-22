@@ -110,7 +110,7 @@ async function listHistory(auth, nextPageToken=null){
     try{
         const res=await gmail.users.history.list({
             userId:'me',
-            maxResults:50,
+            maxResults:2,
             startHistoryId:historyId,
             labelId:'INBOX',
             historyTypes:['MESSAGE_ADDED'],
@@ -118,7 +118,14 @@ async function listHistory(auth, nextPageToken=null){
         });
         // console.log(res);
         console.log('**History Array**')
-        console.log(res.data.history);
+        console.log(res.data);
+        console.log(res.data.history); // May not be present if no data
+        // If history array not present , return the object messageIds directly.
+        if(!res.data.history){
+            return messageIds;
+        }
+        // Else continue
+
         res.data.history.forEach(history=>{
             console.log(history.id);
             console.log(history.messages)
