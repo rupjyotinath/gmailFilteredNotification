@@ -27,6 +27,35 @@ function listLabels(auth) {
     })
 }
 
+
+/**
+ * Gets messages from message id's
+ * @param {google.auth.OAuth2} auth 
+ * @param {Array} messages An array containing message ids, can be obtained from users.messages.list or users.history.list 
+ */
+async function getMessages(auth,messages){
+    const gmail=google.gmail({version:'v1',auth});
+    if(messages.length<1){
+        throw new Error("getMessages requires atleast one message id");
+    }
+    try{
+        const promises=[];
+        
+        messages.map((id)=>{
+            promises.push(gmail.users.messages.get({
+                            id:id,
+                            userId:'me'
+                        }));
+        });
+
+        return Promise.allSettled(promises);
+    }
+    catch(err){
+        console.log("Error in getting messages.");
+        throw err;
+    }
+}
+
 async function listMessages(auth) {
     const gmail=google.gmail({version:'v1',auth});
     try{
@@ -110,7 +139,7 @@ async function listHistory(auth, nextPageToken=null){
     try{
         const res=await gmail.users.history.list({
             userId:'me',
-            maxResults:2,
+            maxResults:50,
             startHistoryId:historyId,
             labelId:'INBOX',
             historyTypes:['MESSAGE_ADDED'],
@@ -256,6 +285,7 @@ function updateSyncFile(newSyncInfo, oldSyncInfo){
 
 module.exports={
     listLabels,
+    getMessages,
     listMessages,
     listHistory,
     syncClient
