@@ -94,8 +94,12 @@ function list(auth) {
 
     // List History
     listHistory(auth)
-    .then(()=>{
-        console.log("listHistory Ran Successfully.");
+    .then((messageIds)=>{
+        console.log("listHistory Ran Successfully. Here are Message Added Ids");
+        messageIds.messagesAddedIds.forEach(messageId=>{
+            console.log(`Message Id: ${messageId}`);
+        })
+        console.log("Done");
     })
     .catch(err=>{
         console.log("Error with listHistory "+err);

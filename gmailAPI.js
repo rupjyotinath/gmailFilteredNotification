@@ -92,6 +92,8 @@ async function listMessages(auth) {
 async function listHistory(auth, nextPageToken=null){
     console.log(nextPageToken)
     let historyId=null;
+    let messageIds={};
+    messageIds.messagesAddedIds=[];
     try{
         const data=fs.readFileSync('./sync.json');
         const syncInfo=JSON.parse(data);
@@ -120,17 +122,32 @@ async function listHistory(auth, nextPageToken=null){
         res.data.history.forEach(history=>{
             console.log(history.id);
             console.log(history.messages)
+            if(history.messagesAdded){
+                history.messagesAdded.forEach(message=>{
+                    console.log(message)
+                    console.log(message.message);
+                    console.log(message.message.id);
+                    console.log(message.message.snippet);
+                    messageIds.messagesAddedIds.push(message.message.id);
+                })
+            }
         })
         console.log(res.data.historyId)
-        console.log(res.data.nextPageToken)
+        console.log(res.data.nextPageToken) // Will be undefined if no other page
         if(res.data.nextPageToken){
             try{
-                await listHistory(auth, res.data.nextPageToken);
+                const returnedMesageIds=await listHistory(auth, res.data.nextPageToken);
+                if(returnedMesageIds.messagesAddedIds){
+                    returnedMesageIds.messagesAddedIds.forEach(messageId=>{
+                        messageIds.messagesAddedIds.push(messageId);
+                    })
+                }
             }
             catch(err){
                 throw err;
             }
         }
+        return messageIds;
     }
     catch(err){
         console.log('WARNING Error while executing Gmail API');
