@@ -1,17 +1,19 @@
 {
-  "name": "calendarapi",
+  "name": "gmailfilterednotify",
   "version": "1.0.0",
-  "description": "Google Calendar API Node.js quickstart project, delegated access using oauth2.0",
+  "description": "CLI app to get filtered Gmail notifications on desktop, 'new email received' for example",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "Google",
-    "Calendar",
-    "Calendar"
+    "Gmail",
+    "Email",
+    "Notification",
+    "Inbox",
+    "Gmail Notification"
   ],
-  "author": "Rupjyoti",
+  "author": "Rupjyoti Nath",
   "license": "MIT",
   "dependencies": {
     "googleapis": "^61.0.0",
