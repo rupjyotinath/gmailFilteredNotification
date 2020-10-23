@@ -2,7 +2,8 @@ const fs=require('fs');
 const readline=require('readline');
 const {google} = require('googleapis');
 
-const {listLabels,listMessages, syncClient, listHistory}=require('./gmailAPI');
+const {listLabels,getMessages,listMessages, syncClient, listHistory}=require('./gmailAPI');
+const { compileFunction } = require('vm');
 
 // If modifying these scopes, delete token.json
 // const SCOPES=['https://www.googleapis.com/auth/calendar.readonly'];
@@ -73,7 +74,7 @@ function getAccessToken(oAuth2Client,callback) {
 }
 
 /**
- * Lists the next 10 events on the user's primary calendar
+ * 
  * @param {google.auth.oAuth2} auth An authorized OAuth2 client
  */
 function list(auth) {
@@ -92,17 +93,48 @@ function list(auth) {
         //     console.log("Error with syncClient "+err);
         // })
 
-    // List History
-    listHistory(auth)
-    .then((messageIds)=>{
-        console.log("listHistory Ran Successfully. Here are Message Added Ids");
-        messageIds.messagesAddedIds.forEach(messageId=>{
-            console.log(`Message Id: ${messageId}`);
-        })
-        console.log("Done");
+    getNewFilteredMessages(auth)
+    .then(()=>{
+        console.log("getNewFilteredMessages ran successfully.");
     })
     .catch(err=>{
-        console.log("Error with listHistory "+err);
+        console.log("Error in getNewFilteredMessages");
+        console.log(err);
     })
+    
+}
+
+async function getNewFilteredMessages(auth){
+    try{
+        // Call listHistory to check new messages
+        const newMessages=await listHistory(auth);
+
+        // Filter the messages received
+
+        // Create an array containing only message ids
+        const messageIds=[];
+        console.log("listHistory Ran Successfully. Here are Message Added Ids");
+        newMessages.messagesAdded.forEach(message=>{
+            console.log(`Message Id: ${message.id}`);
+            messageIds.push(message.id);
+        })
+        console.log("Will be calling getMessages() to get Message details");
+        const values=await getMessages(auth,messageIds);
+        values.forEach(valueElement=>{
+            if(valueElement.value){
+                console.log(valueElement.value.data.id);
+                console.log(valueElement.value.data.snippet);
+                // console.log("    ====payload.headers====");
+                // console.log(valueElement.value.data.payload.headers);
+            
+            }else{
+                console.log("Unknown Error with particular Message")
+            }
+        })
+    }
+    catch(err){
+        console.log("Error in getting new filtered messages.");
+        throw err;
+    }
     
 }
