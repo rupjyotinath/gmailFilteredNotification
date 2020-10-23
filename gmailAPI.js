@@ -121,8 +121,8 @@ async function listMessages(auth) {
 async function listHistory(auth, nextPageToken=null){
     console.log(nextPageToken)
     let historyId=null;
-    let messageIds={};
-    messageIds.messagesAddedIds=[];
+    let newMessages={};
+    newMessages.messagesAdded=[];
     try{
         const data=fs.readFileSync('./sync.json');
         const syncInfo=JSON.parse(data);
@@ -151,7 +151,7 @@ async function listHistory(auth, nextPageToken=null){
         console.log(res.data.history); // May not be present if no data
         // If history array not present , return the object messageIds directly.
         if(!res.data.history){
-            return messageIds;
+            return newMessages;
         }
         // Else continue
 
@@ -161,10 +161,9 @@ async function listHistory(auth, nextPageToken=null){
             if(history.messagesAdded){
                 history.messagesAdded.forEach(message=>{
                     console.log(message)
-                    console.log(message.message);
+                    console.log(message.message); // Contains only id, threadId and labelIds.
                     console.log(message.message.id);
-                    console.log(message.message.snippet);
-                    messageIds.messagesAddedIds.push(message.message.id);
+                    newMessages.messagesAdded.push(message.message);
                 })
             }
         })
@@ -172,10 +171,10 @@ async function listHistory(auth, nextPageToken=null){
         console.log(res.data.nextPageToken) // Will be undefined if no other page
         if(res.data.nextPageToken){
             try{
-                const returnedMesageIds=await listHistory(auth, res.data.nextPageToken);
-                if(returnedMesageIds.messagesAddedIds){
-                    returnedMesageIds.messagesAddedIds.forEach(messageId=>{
-                        messageIds.messagesAddedIds.push(messageId);
+                const returnedNewMessages=await listHistory(auth, res.data.nextPageToken);
+                if(returnedNewMessages.messagesAdded){
+                    returnedNewMessages.messagesAdded.forEach(message=>{
+                        newMessages.messagesAdded.push(message);
                     })
                 }
             }
@@ -183,7 +182,7 @@ async function listHistory(auth, nextPageToken=null){
                 throw err;
             }
         }
-        return messageIds;
+        return newMessages;
     }
     catch(err){
         console.log('WARNING Error while executing Gmail API');
