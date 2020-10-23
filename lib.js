@@ -29,11 +29,12 @@ function conciseMessage(message){
         if(headerFromValue.length===2){
             senderName=headerFromValue[0];
             senderEmail=headerFromValue[1];
+            senderEmail=senderEmail.substring(0,senderEmail.length-1);
         }
         else{
             senderEmail=headerFromValue[0];
+            senderEmail=senderEmail.substring(0,senderEmail.length);
         }        
-        senderEmail=senderEmail.substring(0,senderEmail.length-1);
         if(!senderName && senderEmail){
             senderName=senderEmail.split("@")[0];
         }
