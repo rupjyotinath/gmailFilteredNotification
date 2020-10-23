@@ -4,6 +4,7 @@ const {google} = require('googleapis');
 
 const {listLabels,getMessages,listMessages, syncClient, listHistory}=require('./gmailAPI');
 const { compileFunction } = require('vm');
+const {conciseMessage} = require('./lib');
 
 // If modifying these scopes, delete token.json
 // const SCOPES=['https://www.googleapis.com/auth/calendar.readonly'];
@@ -120,13 +121,15 @@ async function getNewFilteredMessages(auth){
         })
         console.log("Will be calling getMessages() to get Message details");
         const values=await getMessages(auth,messageIds);
+
+        const concisedMessages=[];
         values.forEach(valueElement=>{
             if(valueElement.value){
-                console.log(valueElement.value.data.id);
-                console.log(valueElement.value.data.snippet);
+                // console.log(valueElement.value.data.id);
+                // console.log(valueElement.value.data.snippet);
                 // console.log("    ====payload.headers====");
                 // console.log(valueElement.value.data.payload.headers);
-            
+                concisedMessages.push(conciseMessage(valueElement.value.data));
             }else{
                 console.log("Unknown Error with particular Message")
             }
