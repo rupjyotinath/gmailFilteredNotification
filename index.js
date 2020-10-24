@@ -4,7 +4,8 @@ const {google} = require('googleapis');
 
 const {listLabels,getMessages,listMessages, syncClient, listHistory}=require('./gmailAPI');
 const { compileFunction } = require('vm');
-const {conciseMessage} = require('./lib');
+const {conciseMessage, filterMessageBasedOnLabels, filterMessage} = require('./lib');
+const defaultFilter=require('./defaultFilter');
 
 // If modifying these scopes, delete token.json
 // const SCOPES=['https://www.googleapis.com/auth/calendar.readonly'];
@@ -109,14 +110,20 @@ async function getNewFilteredMessages(auth){
     try{
         // Call listHistory to check new messages
         const newMessages=await listHistory(auth);
+        const messagesAdded=newMessages.messagesAdded;
+        console.log(defaultFilter)
 
-        // Filter the messages received
+        // Filter the messages received based on labelIds
+        const labelFilteredMessages=messagesAdded.filter(
+            message=>filterMessageBasedOnLabels(message,defaultFilter.labels)
+        );
 
         // Create an array containing only message ids
         const messageIds=[];
         console.log("listHistory Ran Successfully. Here are Message Added Ids");
-        newMessages.messagesAdded.forEach(message=>{
+        labelFilteredMessages.forEach(message=>{
             console.log(`Message Id: ${message.id}`);
+            console.log('Labels',message.labelIds);
             messageIds.push(message.id);
         })
         console.log("Will be calling getMessages() to get Message details");
@@ -134,6 +141,8 @@ async function getNewFilteredMessages(auth){
                 console.log("Unknown Error with particular Message")
             }
         })
+
+        // Filter the concised messages based on emailIds and domains provided in filter
     }
     catch(err){
         console.log("Error in getting new filtered messages.");
