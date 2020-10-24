@@ -142,7 +142,14 @@ async function getNewFilteredMessages(auth){
             }
         })
 
+        console.log(concisedMessages.length);
+
         // Filter the concised messages based on emailIds and domains provided in filter
+        const emailAndDomainFilteredMessages=concisedMessages.filter(message=>filterMessage(message,defaultFilter));
+
+        // Log to test
+        console.log(emailAndDomainFilteredMessages.length);
+        emailAndDomainFilteredMessages.forEach(message=>console.log(message));
     }
     catch(err){
         console.log("Error in getting new filtered messages.");
