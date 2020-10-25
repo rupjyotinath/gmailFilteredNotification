@@ -1,6 +1,7 @@
 const fs=require('fs');
 const readline=require('readline');
 const {google} = require('googleapis');
+const notifier=require('node-notifier');
 
 const {listLabels,getMessages,listMessages, syncClient, listHistory}=require('./gmailAPI');
 const { compileFunction } = require('vm');
@@ -21,7 +22,7 @@ const TOKEN_PATH='token.js';
 fs.readFile('credentials.json',(err,content)=>{
     if(err) return console.log("Error loading client secret file:", err);
     // Authorize a client with credentials, then call the Google Calendar API
-    authorize(JSON.parse(content),list);
+    authorize(JSON.parse(content),scheduleNotification);
 });
 
 /**
@@ -79,31 +80,76 @@ function getAccessToken(oAuth2Client,callback) {
  * 
  * @param {google.auth.oAuth2} auth An authorized OAuth2 client
  */
-function list(auth) {
-    // Get Gmail labels
-    // listLabels(auth);
-
-    // Get Messages
-    // listMessages(auth);
-
-    //Sync with Gmail 
-        // syncClient(auth)
-        // .then(()=>{
-        //     console.log("syncClient complete successfully")
-        // })
-        // .catch((err)=>{
-        //     console.log("Error with syncClient "+err);
-        // })
-
-    getNewFilteredMessages(auth)
-    .then(()=>{
-        console.log("getNewFilteredMessages ran successfully.");
-    })
-    .catch(err=>{
-        console.log("Error in getNewFilteredMessages");
-        console.log(err);
-    })
+function scheduleNotification(auth) {
+    // First check if Gmail is sync
+    // i.e. App is running first time ?
+    if(!fs.existsSync('./sync.json')){
+        // If sync.json file not present, the app is running first time, need to sync with Gmail
+        syncClient(auth)
+        .then(()=>{
+            console.log("syncClient complete successfully")
+            // Now run the notifyNewMessages continously every 15 minutes
+            setInterval(()=>{
+                notifyNewMessages(auth)
+                .catch(err=>{
+                    console.log("ERROR",err);
+                })
+            },15*60*1000);
+        })
+        .catch((err)=>{
+            console.log("Error with syncClient "+err);
+        })
+    }
+    else{
+        setInterval(()=>{
+            notifyNewMessages(auth)
+            .catch(err=>{
+                console.log("ERROR",err);
+            })
+        },5*60*1000);
+    }
     
+}
+
+async function notifyNewMessages(auth){
+    try{
+        // Get all the new filtered messages
+        const newMessages=await getNewFilteredMessages(auth);
+
+        // Notify the user, desktop & console
+        notify(newMessages);
+    }
+    catch(err){
+        console.log("Error in notifyNewMessages")
+        throw err;
+    }
+    
+}
+
+function notify(messsages){
+    const totalMessages=messsages.length;
+    if(totalMessages!=0){
+        const notifyString=`You have ${totalMessages} new ${totalMessages==1?"message":"messages"}`;
+        notifier.notify({
+            title:"GmailFilteredNotify",
+            message:notifyString
+        });
+        console.log("**************************************");
+        console.log(notifyString);
+        const currentTime=new Date().toString();
+        console.log(currentTime);
+        console.log("**************************************");
+        messsages.forEach(message=>{
+            console.log(message.from);
+            console.log(message.snippet);
+            console.log("-------------------");
+        })
+    }
+    else{
+        console.log("No New Message");
+        const currentTime=new Date().toString();
+        console.log(currentTime);
+    }
 }
 
 async function getNewFilteredMessages(auth){
@@ -150,6 +196,9 @@ async function getNewFilteredMessages(auth){
         // Log to test
         console.log(emailAndDomainFilteredMessages.length);
         emailAndDomainFilteredMessages.forEach(message=>console.log(message));
+
+        // Return the  new messages
+        return emailAndDomainFilteredMessages;
     }
     catch(err){
         console.log("Error in getting new filtered messages.");
