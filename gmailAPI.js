@@ -168,6 +168,7 @@ async function listHistory(auth, nextPageToken=null){
             }
         })
         console.log(res.data.historyId)
+        newMessages.historyId=res.data.historyId;
         console.log(res.data.nextPageToken) // Will be undefined if no other page
         if(res.data.nextPageToken){
             try{
@@ -287,6 +288,7 @@ module.exports={
     getMessages,
     listMessages,
     listHistory,
-    syncClient
+    syncClient,
+    updateSyncFile
 }
 

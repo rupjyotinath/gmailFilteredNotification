@@ -3,7 +3,7 @@ const readline=require('readline');
 const {google} = require('googleapis');
 const notifier=require('node-notifier');
 
-const {listLabels,getMessages,listMessages, syncClient, listHistory}=require('./gmailAPI');
+const {listLabels,getMessages,listMessages, syncClient, listHistory,updateSyncFile}=require('./gmailAPI');
 const { compileFunction } = require('vm');
 const {conciseMessage, filterMessageBasedOnLabels, filterMessage} = require('./lib');
 const defaultFilter=require('./defaultFilter');
@@ -211,6 +211,15 @@ async function getNewFilteredMessages(auth){
         // Log to test
         console.log(emailAndDomainFilteredMessages.length);
         emailAndDomainFilteredMessages.forEach(message=>console.log(message));
+
+        // Everything is fine, so save the history id so that next time we don't notify the same messages
+        const latestHistoryId=newMessages.historyId;
+        const oldData=fs.readFileSync('./sync.json');
+        const oldSyncInfo=JSON.parse(oldData);
+        const newSyncInfo=oldSyncInfo;
+        newSyncInfo.mostRecentHistoryId=latestHistoryId;
+        updateSyncFile(newSyncInfo,oldSyncInfo);
+
 
         // Return the  new messages
         return emailAndDomainFilteredMessages;
