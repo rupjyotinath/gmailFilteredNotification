@@ -188,6 +188,9 @@ async function getNewFilteredMessages(auth){
             messageIds.push(message.id);
         })
         console.log("Will be calling getMessages() to get Message details");
+        if(messageIds.length==0){
+            return [];
+        }
         const values=await getMessages(auth,messageIds);
 
         const concisedMessages=[];
