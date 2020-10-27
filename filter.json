@@ -1,0 +1,22 @@
+{
+    "labels":{
+        "include":[],
+        "exclude":["CATEGORY_SOCIAL"]
+    },
+    "emailIds":{
+        "include":[],
+        "exclude":[],
+        "domainFilter":true
+    },
+    "domains":{
+        "include":[],
+        "exclude":[],
+        "socialFilter":false
+    },
+    "social":{
+        "linkedin":{
+            "include":["NEW_MESSAGE","CONNECTION_REQUEST"],
+            "exclude":["CONNECTION_ACCEPTED"]
+        }
+    }
+}
