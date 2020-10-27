@@ -152,16 +152,31 @@ function notify(messsages){
     }
 }
 
+/**
+ * Gets the new messages after applying the filter
+ * @param {google.auth.oAuth2} auth 
+ */
 async function getNewFilteredMessages(auth){
     try{
         // Call listHistory to check new messages
         const newMessages=await listHistory(auth);
         const messagesAdded=newMessages.messagesAdded;
-        console.log(defaultFilter)
+        // console.log(defaultFilter)
+        let content,filter;
+        try{
+            // Get the user filter settings
+            content=fs.readFileSync('./filter.json');
+            filter=JSON.parse(content);
+        }
+        catch(err){
+            // If error, will use the default filter
+            console.log("Error in reading filter settings, switching to default filter settings");
+            filter=defaultFilter;
+        }
 
         // Filter the messages received based on labelIds
         const labelFilteredMessages=messagesAdded.filter(
-            message=>filterMessageBasedOnLabels(message,defaultFilter.labels)
+            message=>filterMessageBasedOnLabels(message,filter.labels)
         );
 
         // Create an array containing only message ids
@@ -191,7 +206,7 @@ async function getNewFilteredMessages(auth){
         console.log(concisedMessages.length);
 
         // Filter the concised messages based on emailIds and domains provided in filter
-        const emailAndDomainFilteredMessages=concisedMessages.filter(message=>filterMessage(message,defaultFilter));
+        const emailAndDomainFilteredMessages=concisedMessages.filter(message=>filterMessage(message,filter));
 
         // Log to test
         console.log(emailAndDomainFilteredMessages.length);
