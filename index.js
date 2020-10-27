@@ -201,13 +201,13 @@ async function getNewFilteredMessages(auth){
         );
 
         // Create an array containing only message ids
-        const messageIds=[];
+        const messageIds=labelFilteredMessages.map(message=>message.id);
         // console.log("listHistory Ran Successfully. Here are Message Added Ids");
-        labelFilteredMessages.forEach(message=>{
+        // labelFilteredMessages.forEach(message=>{
             // console.log(`Message Id: ${message.id}`);
             // console.log('Labels',message.labelIds);
-            messageIds.push(message.id);
-        })
+            // messageIds.push(message.id);
+        // })
         // console.log("Will be calling getMessages() to get Message details");
         if(messageIds.length==0){
             return [];
