@@ -239,7 +239,7 @@ async function getNewFilteredMessages(auth){
         const latestHistoryId=newMessages.historyId;
         const oldData=fs.readFileSync('./sync.json');
         const oldSyncInfo=JSON.parse(oldData);
-        const newSyncInfo=oldSyncInfo;
+        const newSyncInfo={...oldSyncInfo};
         newSyncInfo.mostRecentHistoryId=latestHistoryId;
         updateSyncFile(newSyncInfo,oldSyncInfo);
 
