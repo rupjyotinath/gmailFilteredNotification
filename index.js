@@ -119,7 +119,7 @@ function scheduleNotification(auth) {
             .catch(err=>{
                 console.log("ERROR",err);
             })
-        },5*60*1000);
+        },15*60*1000);
     }
     
 }
