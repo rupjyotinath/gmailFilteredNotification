@@ -1,10 +1,6 @@
 /**
  * Default filters
- * 
- * The Sytem labels provided by Gmail and received by this application
- * are :
- * UNREAD, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_PERSONAL,
- * CATEGORY_UPDATES, CATEGORY_FORUMS, IMPORTANT, INBOX, STARRED
+ * This filter is used if there is any error in user provided filter info in filter.json file
  */
 const defaultFilter={
     "labels":{
@@ -12,13 +8,13 @@ const defaultFilter={
         "exclude":["CATEGORY_SOCIAL","CATEGORY_PROMOTIONS"]
     },
     "emailIds":{
-        "include":["abc@example.com"],
-        "exclude":["def@example.com"],
+        "include":[],
+        "exclude":[],
         "domainFilter":true
     },
     "domains":{
-        "include":["linkedin.com","indeed.co.in"],
-        "exclude":["glassdoor.com"],
+        "include":[],
+        "exclude":[],
         "socialFilter":false
     },
     "social":{

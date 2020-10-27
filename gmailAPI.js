@@ -1,47 +1,20 @@
 const { google } = require("googleapis");
-const notifier=require('node-notifier');
 const fs=require('fs');
-const { compileFunction } = require("vm");
-
-/**
- * List the labels in the user's account
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client
- */
-function listLabels(auth) {
-    const gmail=google.gmail({version:'v1',auth});
-    gmail.users.labels.list({
-        userId:'me'
-    },(err,res)=>{
-        if(err) return console.log('The API returned an error: '+err);
-        const labels = res.data.labels;
-        if(labels.length){
-            console.log('Labels:');
-            labels.forEach((label)=>{
-                console.log(label.name);
-                console.log(label);
-            })
-        }
-        else{
-            console.log('No labels found');
-        }
-    })
-}
-
 
 /**
  * Gets messages from message id's
  * @param {google.auth.OAuth2} auth 
- * @param {Array} messages An array containing message ids, can be obtained from users.messages.list or users.history.list 
+ * @param {Array} messageids An array containing message ids, can be obtained from users.messages.list or users.history.list 
  */
-async function getMessages(auth,messages){
+async function getMessages(auth,messageids){
     const gmail=google.gmail({version:'v1',auth});
-    if(messages.length<1){
+    if(messageids.length<1){
         throw new Error("getMessages requires atleast one message id");
     }
     try{
         const promises=[];
         
-        messages.map((id)=>{
+        messageids.map((id)=>{
             promises.push(gmail.users.messages.get({
                             id:id,
                             userId:'me'
@@ -56,71 +29,16 @@ async function getMessages(auth,messages){
     }
 }
 
-async function listMessages(auth) {
-    const gmail=google.gmail({version:'v1',auth});
-    try{
-        const res=await gmail.users.messages.list({
-            includeSpamTrash:false,
-            labelIds:['INBOX'],
-            maxResults:5,
-            q:'category:primary',
-            userId:'me'
-        });
-        // console.log(res)
-        console.log(res.data);
-        const messages=res.data.messages;
-        console.log('****Get Messages Individually****');
-        
-        const promises=[];
-        
-        messages.map((message)=>{
-            promises.push(gmail.users.messages.get({
-                            id:message.id,
-                            userId:'me'
-                        }));
-        });
-
-        Promise.allSettled(promises).then(values=>{
-            values.forEach(valueElement=>{
-                if(valueElement.value){
-                    console.log(valueElement.value.data.id);
-                    console.log(valueElement.value.data.snippet);
-                    // console.log("    ====payload.headers====");
-                    // console.log(valueElement.value.data.payload.headers);
-
-                }else{
-                    console.log("Unknown Error with particular Message")
-                }
-            })
-            // notifier.notify('All messages downloaded and read.') // It works
-        });
-
-        // WORKING FOR LOOP But Slow since its series.
-        // for(let i=0;i<messages.length;i++){
-        //     const id= messages[i].id;
-        //     try{
-        //         const res=await gmail.users.messages.get({
-        //             id:id,
-        //             userId:'me'
-        //         });
-        //         console.log(res.data.id)
-        //         console.log(res.data.labelIds);
-        //         console.log(res.data.snippet)
-        //     }
-        //     catch(err){
-        //         console.log('Unable to get Individual messages:'+err);
-        //     }
-            
-        // }  
-    }
-    catch(err){
-        return console.log('Error in API'+err);
-    }
-}
-
+/**
+ * Function returns the newly added messages according to changes in the user mailbox's history.
+ * It also saves the returns the current history Id.
+ * Runs the users.history.list Gmail API and corcerned only newly added messages.
+ * It is the Google recommended way (polling) for user email changes for installed apps.
+ * @param {*} auth Google oauth2 client
+ * @param {*} nextPageToken To retrieve specific page of result
+ */
 async function listHistory(auth, nextPageToken=null){
-    console.log(nextPageToken)
-    let historyId=null;
+    let historyId;
     let newMessages={};
     newMessages.messagesAdded=[];
     try{
@@ -146,9 +64,9 @@ async function listHistory(auth, nextPageToken=null){
             pageToken:nextPageToken?nextPageToken:null
         });
         // console.log(res);
-        console.log('**History Array**')
-        console.log(res.data);
-        console.log(res.data.history); // May not be present if no data
+        // console.log('**History Array**')
+        // console.log(res.data);
+        // console.log(res.data.history); // May not be present if no data
         // If history array not present , return the object messageIds directly.
         if(!res.data.history){
             return newMessages;
@@ -156,20 +74,20 @@ async function listHistory(auth, nextPageToken=null){
         // Else continue
 
         res.data.history.forEach(history=>{
-            console.log(history.id);
-            console.log(history.messages)
+            // console.log(history.id);
+            // console.log(history.messages)
             if(history.messagesAdded){
                 history.messagesAdded.forEach(message=>{
-                    console.log(message)
-                    console.log(message.message); // Contains only id, threadId and labelIds.
-                    console.log(message.message.id);
+                    // console.log(message)
+                    // console.log(message.message); // Contains only id, threadId and labelIds.
+                    // console.log(message.message.id);
                     newMessages.messagesAdded.push(message.message);
                 })
             }
         })
-        console.log(res.data.historyId)
+        // console.log(res.data.historyId)
         newMessages.historyId=res.data.historyId;
-        console.log(res.data.nextPageToken) // Will be undefined if no other page
+        // console.log(res.data.nextPageToken) // Will be undefined if no other page
         if(res.data.nextPageToken){
             try{
                 const returnedNewMessages=await listHistory(auth, res.data.nextPageToken);
@@ -194,6 +112,7 @@ async function listHistory(auth, nextPageToken=null){
 
 /**
  * Syncs with Gmail to get the latest historyId and messageId
+ * The sync.json file used here will subsequently be used to get history changes.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client
  */
 async function syncClient(auth){
@@ -215,10 +134,10 @@ async function syncClient(auth){
         const mostRecentHistoryId=mostRecentMesage.data.historyId;
 
         // For Debugging
-        console.log('mostRecentMessageId:',mostRecentMessageId);
+        // console.log('mostRecentMessageId:',mostRecentMessageId);
         console.log('mostRecentHistoryId:',mostRecentHistoryId);
-        console.log('Message Snippet:')
-        console.log(mostRecentMesage.data.snippet);
+        // console.log('Message Snippet:')
+        // console.log(mostRecentMesage.data.snippet);
 
         let content=null;
         try{
@@ -268,7 +187,8 @@ async function syncClient(auth){
 
 
 /**
- * Updates the sync.json file and sync-backup.json file, used as part of the synchronization process
+ * Updates the sync.json file and sync-backup.json file, used as part of the synchronization process.
+ * Also used to save latest history id whenever new message found.
  * @param {Object} newSyncInfo Object containing the latest historyId and messageId to save
  * @param {Object} oldSyncInfo Object containing the previous historyId and messageId to save
  */
@@ -280,6 +200,89 @@ function updateSyncFile(newSyncInfo, oldSyncInfo){
     }catch(err){
         console.log("Error while updating sync files"+err);
         throw err;
+    }
+}
+
+/*
+                NOTICE
+THE BELOW FUNCTION listLabels IS TAKEN FROM GOOGLE GMAIL NODE.JS QUICKSTART PROJECT 
+VISIT https://developers.google.com/gmail/api/quickstart/nodejs OR RESPECTIVE GMAIL API PROJECT.
+
+THE CODE IS PROBABLY APACHE 2.0 LICENSED. CHECK THE LINK OR THEIR RELEVANT GITBUB REPOSITORY.
+
+ALL OTHER CODE IN THIS FILE IS SOLELY WRITTEN BY ME AND MIT LICENSED.
+
+*/
+
+/**
+ * List the labels in the user's account, NOT USED IN THIS VERSION OF PROJECT . FOR FUTURE USE.
+ * Used to get Lables for understanding Gmail labels.
+ * @param {google.auth.OAuth2} auth An authorized OAuth2 client
+ */
+function listLabels(auth) {
+    const gmail=google.gmail({version:'v1',auth});
+    gmail.users.labels.list({
+        userId:'me'
+    },(err,res)=>{
+        if(err) return console.log('The API returned an error: '+err);
+        const labels = res.data.labels;
+        if(labels.length){
+            console.log('Labels:');
+            labels.forEach((label)=>{
+                console.log(label.name);
+                console.log(label);
+            })
+        }
+        else{
+            console.log('No labels found');
+        }
+    })
+}
+
+/**
+ * Gets and displays messages. 
+ * Currently, this function is not used. For future use.
+ */
+async function listMessages(auth) {
+    const gmail=google.gmail({version:'v1',auth});
+    try{
+        const res=await gmail.users.messages.list({
+            includeSpamTrash:false,
+            labelIds:['INBOX'],
+            maxResults:5,
+            q:'category:primary',
+            userId:'me'
+        });
+        // console.log(res)
+        console.log(res.data);
+        const messages=res.data.messages;
+        console.log('****Get Messages Individually****');
+        
+        const promises=[];
+        
+        messages.map((message)=>{
+            promises.push(gmail.users.messages.get({
+                            id:message.id,
+                            userId:'me'
+                        }));
+        });
+
+        Promise.allSettled(promises).then(values=>{
+            values.forEach(valueElement=>{
+                if(valueElement.value){
+                    console.log(valueElement.value.data.id);
+                    console.log(valueElement.value.data.snippet);
+                    // console.log("    ====payload.headers====");
+                    // console.log(valueElement.value.data.payload.headers);
+
+                }else{
+                    console.log("Unknown Error with particular Message")
+                }
+            })
+        });
+    }
+    catch(err){
+        return console.log('Error in API'+err);
     }
 }
 

@@ -15,7 +15,7 @@ function conciseMessage(message){
     const messageHeaders=message.payload.headers;
     // console.log(messageHeaders);
     const headerFrom=messageHeaders.find(({name})=>name==='From');
-    console.log(headerFrom)
+    // console.log(headerFrom)
 
     if(headerFrom){
         concisedMessage.from=headerFrom.value;
@@ -25,7 +25,7 @@ function conciseMessage(message){
     let senderEmail;
     if(headerFrom){
         const headerFromValue=headerFrom.value.split(" <");
-        console.log(headerFromValue)
+        // console.log(headerFromValue)
         if(headerFromValue.length===2){
             senderName=headerFromValue[0];
             senderEmail=headerFromValue[1];
@@ -49,7 +49,7 @@ function conciseMessage(message){
     concisedMessage.senderName=senderName;
     concisedMessage.domain=domain;
 
-    console.log(concisedMessage);
+    // console.log(concisedMessage);
 
     return concisedMessage;
 }
@@ -73,7 +73,7 @@ function filterMessageBasedOnProperty(message,values,property){
         return pass;
     }
     else if(values.exclude.length){
-        console.log(message[property])
+        // console.log(message[property])
         let pass=true;
         for(const label of values.exclude){
             if(message[property].indexOf(label)!=-1){
@@ -100,6 +100,12 @@ function filterMessageBasedOnDomains(message,domains){
     return filterMessageBasedOnProperty(message,domains,"domain");
 }
 
+
+/**
+ * Filter function for a single message. Filters based on emailid or domain according to filter object/settings passed.
+ * @param {Object} message 
+ * @param {Object} filter 
+ */
 function filterMessage(message,filter){
     const emailPass=filterMessageBasedOnEmailIds(message,filter.emailIds);
     if(filter.emailIds.include.length>0){

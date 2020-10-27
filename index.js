@@ -4,7 +4,6 @@ const {google} = require('googleapis');
 const notifier=require('node-notifier');
 
 const {listLabels,getMessages,listMessages, syncClient, listHistory,updateSyncFile}=require('./gmailAPI');
-const { compileFunction } = require('vm');
 const {conciseMessage, filterMessageBasedOnLabels, filterMessage} = require('./lib');
 const defaultFilter=require('./defaultFilter');
 
@@ -76,8 +75,22 @@ function getAccessToken(oAuth2Client,callback) {
     })
 }
 
+
+/*
+                NOTICE
+THE ABOVE STARTING CODE PART IS TAKEN FROM CALENDAR/GMAIL NODE.JS QUICKSTART PROJECT 
+VISIT https://developers.google.com/calendar/quickstart/nodejs &
+      https://developers.google.com/gmail/api/quickstart/nodejs
+
+THE ABOVE CODE IS PROBABLY APACHE 2.0 LICENSED. CHECK THE LINK OR THEIR RELEVANT GITBUB REPOSITORY.
+
+ALL OTHER CODE IN THIS FILE IS SOLELY WRITTEN BY ME AND MIT LICENSED.
+
+*/
+
 /**
- * 
+ * It is primary function that run after authorization and schedules the notifyNewMessags function to run continously.
+ * It also syncs with Gmail the first time the user runs the app
  * @param {google.auth.oAuth2} auth An authorized OAuth2 client
  */
 function scheduleNotification(auth) {
@@ -97,7 +110,7 @@ function scheduleNotification(auth) {
             },15*60*1000);
         })
         .catch((err)=>{
-            console.log("Error with syncClient "+err);
+            return console.log("Error with syncClient "+err);
         })
     }
     else{
@@ -111,6 +124,9 @@ function scheduleNotification(auth) {
     
 }
 
+/**
+ * Gets the new messages and call the notify function to actually notify user
+ */
 async function notifyNewMessages(auth){
     try{
         // Get all the new filtered messages
@@ -126,6 +142,9 @@ async function notifyNewMessages(auth){
     
 }
 
+/**
+ * Notifies the user about the new messages
+ */
 function notify(messsages){
     const totalMessages=messsages.length;
     if(totalMessages!=0){
@@ -146,9 +165,11 @@ function notify(messsages){
         })
     }
     else{
+        console.log("**************************************");
         console.log("No New Message");
         const currentTime=new Date().toString();
         console.log(currentTime);
+        console.log("**************************************");
     }
 }
 
@@ -181,13 +202,13 @@ async function getNewFilteredMessages(auth){
 
         // Create an array containing only message ids
         const messageIds=[];
-        console.log("listHistory Ran Successfully. Here are Message Added Ids");
+        // console.log("listHistory Ran Successfully. Here are Message Added Ids");
         labelFilteredMessages.forEach(message=>{
-            console.log(`Message Id: ${message.id}`);
-            console.log('Labels',message.labelIds);
+            // console.log(`Message Id: ${message.id}`);
+            // console.log('Labels',message.labelIds);
             messageIds.push(message.id);
         })
-        console.log("Will be calling getMessages() to get Message details");
+        // console.log("Will be calling getMessages() to get Message details");
         if(messageIds.length==0){
             return [];
         }
@@ -206,14 +227,13 @@ async function getNewFilteredMessages(auth){
             }
         })
 
-        console.log(concisedMessages.length);
+        // console.log(concisedMessages.length);
 
         // Filter the concised messages based on emailIds and domains provided in filter
         const emailAndDomainFilteredMessages=concisedMessages.filter(message=>filterMessage(message,filter));
 
-        // Log to test
-        console.log(emailAndDomainFilteredMessages.length);
-        emailAndDomainFilteredMessages.forEach(message=>console.log(message));
+        // console.log(emailAndDomainFilteredMessages.length);
+        // emailAndDomainFilteredMessages.forEach(message=>console.log(message));
 
         // Everything is fine, so save the history id so that next time we don't notify the same messages
         const latestHistoryId=newMessages.historyId;
